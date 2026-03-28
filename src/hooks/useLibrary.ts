@@ -1,131 +1,70 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WatchlistItem, WatchedItem } from '@/api/types';
+import { useAuth } from './useAuth';
+import { useLocalLibrary, LibraryActions, hasLocalData, getLocalData, clearLocalData } from './useLocalLibrary';
+import { useSupabaseLibrary, importLocalData } from './useSupabaseLibrary';
 import React from 'react';
 
-const WATCHLIST_KEY = '@watchlist';
-const WATCHED_KEY = '@watched';
+const IMPORT_OFFERED_KEY = '@import_offered';
 
-interface LibraryContextValue {
-  watchlist: WatchlistItem[];
-  watched: WatchedItem[];
-  isLoading: boolean;
-  isInWatchlist: (tmdbId: number) => boolean;
-  isWatched: (tmdbId: number) => boolean;
-  addToWatchlist: (item: Omit<WatchlistItem, 'addedAt'>) => void;
-  removeFromWatchlist: (tmdbId: number) => void;
-  markAsWatched: (tmdbId: number, rating: number, note?: string) => void;
-  removeFromWatched: (tmdbId: number) => void;
-  updateRating: (tmdbId: number, rating: number, note?: string) => void;
-}
+interface LibraryContextValue extends LibraryActions {}
 
 const LibraryContext = createContext<LibraryContextValue | null>(null);
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [watched, setWatched] = useState<WatchedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isProfileComplete } = useAuth();
+  const local = useLocalLibrary();
+  const remote = useSupabaseLibrary(user?.id);
 
+  const isAuthenticated = !!user;
+  const active = isAuthenticated ? remote : local;
+
+  // Offer to import local data only after profile is set up
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!user || !isProfileComplete) return;
 
-  async function loadData() {
-    try {
-      const [watchlistData, watchedData] = await Promise.all([
-        AsyncStorage.getItem(WATCHLIST_KEY),
-        AsyncStorage.getItem(WATCHED_KEY),
-      ]);
-      if (watchlistData) setWatchlist(JSON.parse(watchlistData));
-      if (watchedData) setWatched(JSON.parse(watchedData));
-    } finally {
-      setIsLoading(false);
-    }
-  }
+    (async () => {
+      const alreadyOffered = await AsyncStorage.getItem(IMPORT_OFFERED_KEY);
+      if (alreadyOffered) return;
 
-  async function persistWatchlist(items: WatchlistItem[]) {
-    setWatchlist(items);
-    await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(items));
-  }
+      const hasData = await hasLocalData();
+      if (!hasData) {
+        await AsyncStorage.setItem(IMPORT_OFFERED_KEY, 'true');
+        return;
+      }
 
-  async function persistWatched(items: WatchedItem[]) {
-    setWatched(items);
-    await AsyncStorage.setItem(WATCHED_KEY, JSON.stringify(items));
-  }
-
-  const isInWatchlist = useCallback(
-    (tmdbId: number) => watchlist.some((item) => item.tmdbId === tmdbId),
-    [watchlist],
-  );
-
-  const isWatched_ = useCallback(
-    (tmdbId: number) => watched.some((item) => item.tmdbId === tmdbId),
-    [watched],
-  );
-
-  const addToWatchlist = useCallback(
-    (item: Omit<WatchlistItem, 'addedAt'>) => {
-      if (watchlist.some((i) => i.tmdbId === item.tmdbId)) return;
-      const newItem: WatchlistItem = { ...item, addedAt: new Date().toISOString() };
-      persistWatchlist([newItem, ...watchlist]);
-    },
-    [watchlist],
-  );
-
-  const removeFromWatchlist = useCallback(
-    (tmdbId: number) => {
-      persistWatchlist(watchlist.filter((i) => i.tmdbId !== tmdbId));
-    },
-    [watchlist],
-  );
-
-  const markAsWatched = useCallback(
-    (tmdbId: number, rating: number, note?: string) => {
-      const existing = watchlist.find((i) => i.tmdbId === tmdbId);
-      if (!existing) return;
-
-      const watchedItem: WatchedItem = {
-        ...existing,
-        watchedAt: new Date().toISOString(),
-        myRating: rating,
-        myNote: note,
-      };
-
-      persistWatchlist(watchlist.filter((i) => i.tmdbId !== tmdbId));
-      persistWatched([watchedItem, ...watched]);
-    },
-    [watchlist, watched],
-  );
-
-  const removeFromWatched = useCallback(
-    (tmdbId: number) => {
-      persistWatched(watched.filter((i) => i.tmdbId !== tmdbId));
-    },
-    [watched],
-  );
-
-  const updateRating = useCallback(
-    (tmdbId: number, rating: number, note?: string) => {
-      const updated = watched.map((item) =>
-        item.tmdbId === tmdbId ? { ...item, myRating: rating, myNote: note } : item,
+      Alert.alert(
+        'Import Local Data',
+        'You have watchlist and watched items saved locally. Would you like to import them to your account?',
+        [
+          {
+            text: 'No Thanks',
+            style: 'cancel',
+            onPress: () => AsyncStorage.setItem(IMPORT_OFFERED_KEY, 'true'),
+          },
+          {
+            text: 'Import',
+            onPress: async () => {
+              try {
+                const data = await getLocalData();
+                await importLocalData(user.id, data);
+                await clearLocalData();
+                await AsyncStorage.setItem(IMPORT_OFFERED_KEY, 'true');
+                // Refresh remote data
+                // The useSupabaseLibrary hook will re-fetch on next render
+              } catch (error: any) {
+                Alert.alert('Import Failed', error.message || 'Could not import your data.');
+              }
+            },
+          },
+        ],
       );
-      persistWatched(updated);
-    },
-    [watched],
-  );
+    })();
+  }, [user]);
 
-  const value: LibraryContextValue = {
-    watchlist,
-    watched,
-    isLoading,
-    isInWatchlist,
-    isWatched: isWatched_,
-    addToWatchlist,
-    removeFromWatchlist,
-    markAsWatched,
-    removeFromWatched,
-    updateRating,
-  };
+  const value: LibraryContextValue = active;
 
   return React.createElement(LibraryContext.Provider, { value }, children);
 }

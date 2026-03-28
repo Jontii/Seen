@@ -2,7 +2,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
-type RatingSource = 'imdb' | 'rt' | 'metacritic' | 'personal';
+type RatingSource = 'imdb' | 'rt' | 'metacritic' | 'tmdb' | 'personal';
 
 interface RatingBadgeProps {
   source: RatingSource;
@@ -14,6 +14,7 @@ const SOURCE_CONFIG: Record<RatingSource, { label: string; color: string }> = {
   imdb: { label: 'IMDb', color: colors.imdb },
   rt: { label: 'RT', color: colors.rottenTomatoes },
   metacritic: { label: 'MC', color: '#FFCC34' },
+  tmdb: { label: 'TMDB', color: '#01D277' },
   personal: { label: 'You', color: colors.accent },
 };
 
@@ -23,13 +24,9 @@ export function RatingBadge({ source, value, fresh }: RatingBadgeProps) {
   const config = SOURCE_CONFIG[source];
 
   const displayValue =
-    source === 'imdb'
+    source === 'imdb' || source === 'tmdb' || source === 'personal'
       ? `${value}/10`
-      : source === 'rt'
-        ? value
-        : source === 'personal'
-          ? `${value}/10`
-          : value;
+      : value;
 
   return (
     <View style={styles.container} testID={`rating-badge-${source}`}>

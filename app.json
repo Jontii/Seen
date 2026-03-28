@@ -1,11 +1,14 @@
 {
   "expo": {
-    "name": "Have You Seen",
+    "name": "Seen?",
     "slug": "have-you-seen",
     "version": "1.0.0",
     "scheme": "have-you-seen",
     "newArchEnabled": true,
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "bundleIdentifier": "com.haveyouseen.app",
       "supportsTablet": true
@@ -16,7 +19,21 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0A84FF"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
     "extra": {
       "eas": {
         "projectId": "5e00c4e8-35bd-4f33-a23f-57e2d75841e8"

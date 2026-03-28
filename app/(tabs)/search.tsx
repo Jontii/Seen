@@ -69,6 +69,7 @@ export default function SearchScreen() {
               title={item.title}
               posterPath={item.posterPath}
               year={item.year}
+              voteAverage={item.voteAverage}
             />
           )}
           contentContainerStyle={styles.list}

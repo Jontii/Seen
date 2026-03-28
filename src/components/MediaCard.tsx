@@ -11,10 +11,11 @@ interface MediaCardProps {
   title: string;
   posterPath: string | null;
   year: string;
+  voteAverage?: number;
   rating?: number;
 }
 
-export function MediaCard({ tmdbId, mediaType, title, posterPath, year, rating }: MediaCardProps) {
+export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAverage, rating }: MediaCardProps) {
   const router = useRouter();
 
   return (
@@ -40,12 +41,20 @@ export function MediaCard({ tmdbId, mediaType, title, posterPath, year, rating }
           </View>
         </View>
       </View>
-      {rating != null && (
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingText}>{rating}</Text>
-          <Text style={styles.ratingLabel}>/10</Text>
-        </View>
-      )}
+      <View style={styles.ratingsColumn}>
+        {voteAverage != null && voteAverage > 0 && (
+          <View style={styles.ratingContainer}>
+            <Text style={styles.tmdbIcon}>★</Text>
+            <Text style={styles.tmdbRating}>{voteAverage.toFixed(1)}</Text>
+          </View>
+        )}
+        {rating != null && (
+          <View style={styles.ratingContainer}>
+            <Text style={styles.personalIcon}>♥</Text>
+            <Text style={styles.ratingText}>{rating}</Text>
+          </View>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -99,19 +108,34 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: '600',
   },
+  ratingsColumn: {
+    alignItems: 'flex-end',
+    marginLeft: spacing.sm,
+    gap: 2,
+  },
   ratingContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    marginLeft: spacing.sm,
+    alignItems: 'center',
+    gap: 3,
+  },
+  tmdbIcon: {
+    color: '#01D277',
+    fontSize: fontSize.sm,
+  },
+  tmdbRating: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  personalIcon: {
+    color: colors.accent,
+    fontSize: fontSize.sm,
   },
   ratingText: {
     color: colors.accent,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.sm,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
-  },
-  ratingLabel: {
-    color: colors.textTertiary,
-    fontSize: fontSize.xs,
   },
 });

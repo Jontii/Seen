@@ -49,6 +49,7 @@ describe('tmdb', () => {
         posterPath: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
         year: '1999',
         overview: 'A ticking-Loss insomnia movie.',
+        voteAverage: 8.433,
       });
     });
 

@@ -1,7 +1,6 @@
 import { ExternalRatings } from './types';
 
 const OMDB_BASE_URL = 'https://www.omdbapi.com';
-const API_KEY = process.env.EXPO_PUBLIC_OMDB_API_KEY;
 
 interface OmdbRating {
   Source: string;
@@ -15,8 +14,9 @@ interface OmdbResponse {
 }
 
 export async function getRatings(imdbId: string): Promise<ExternalRatings | null> {
+  const apiKey = process.env.EXPO_PUBLIC_OMDB_API_KEY ?? '';
   const url = new URL(OMDB_BASE_URL);
-  url.searchParams.set('apikey', API_KEY ?? '');
+  url.searchParams.set('apikey', apiKey);
   url.searchParams.set('i', imdbId);
 
   const response = await fetch(url.toString());

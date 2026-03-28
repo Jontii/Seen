@@ -8,6 +8,31 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+jest.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: jest.fn(),
+    rpc: jest.fn(),
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
+      onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
+    },
+  },
+}));
+
+jest.mock('../useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    session: null,
+    profile: null,
+    isLoading: false,
+    isProfileComplete: false,
+    signInWithEmail: jest.fn(),
+    signOut: jest.fn(),
+    updateProfile: jest.fn(),
+    refreshProfile: jest.fn(),
+  }),
+}));
+
 function wrapper({ children }: { children: ReactNode }) {
   return React.createElement(LibraryProvider, null, children);
 }

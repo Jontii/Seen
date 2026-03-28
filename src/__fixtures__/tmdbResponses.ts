@@ -7,6 +7,7 @@ export const searchMultiResponse = {
       poster_path: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
       release_date: '1999-10-15',
       overview: 'A ticking-Loss insomnia movie.',
+      vote_average: 8.433,
     },
     {
       id: 1399,
@@ -15,6 +16,7 @@ export const searchMultiResponse = {
       poster_path: '/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg',
       first_air_date: '2011-04-17',
       overview: 'Seven noble families fight for control.',
+      vote_average: 8.438,
     },
     {
       id: 99999,
@@ -22,6 +24,7 @@ export const searchMultiResponse = {
       name: 'Some Actor',
       poster_path: null,
       overview: '',
+      vote_average: 0,
     },
   ],
   total_results: 3,
@@ -41,6 +44,7 @@ export const trendingResponse = {
       poster_path: '/trending.jpg',
       release_date: '2024-01-01',
       overview: 'A trending movie.',
+      vote_average: 7.2,
     },
   ],
 };

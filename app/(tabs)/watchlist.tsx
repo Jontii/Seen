@@ -1,14 +1,37 @@
-import { FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useLibrary } from '@/hooks/useLibrary';
+import { useAuth } from '@/hooks/useAuth';
+import { useRecommendations } from '@/hooks/useRecommendations';
 import { MediaCard } from '@/components/MediaCard';
+import RecommendationCard from '@/components/RecommendationCard';
 import { EmptyState } from '@/components/EmptyState';
-import { colors, spacing } from '@/constants/theme';
+import { colors, spacing, fontSize } from '@/constants/theme';
 import React from 'react';
 
 export default function WatchlistScreen() {
-  const { watchlist, removeFromWatchlist } = useLibrary();
+  const { watchlist } = useLibrary();
+  const { user } = useAuth();
+  const { recommendations, markAsSeen } = useRecommendations();
 
-  if (watchlist.length === 0) {
+  const unseenRecs = recommendations.filter((r) => !r.seenAt);
+
+  const ListHeader = () => {
+    if (!user || unseenRecs.length === 0) return null;
+    return (
+      <View style={styles.recsSection}>
+        <Text style={styles.recsTitle}>Recommendations ({unseenRecs.length})</Text>
+        {unseenRecs.map((rec) => (
+          <RecommendationCard
+            key={rec.id}
+            recommendation={rec}
+            onSeen={() => markAsSeen(rec.id)}
+          />
+        ))}
+      </View>
+    );
+  };
+
+  if (watchlist.length === 0 && unseenRecs.length === 0) {
     return (
       <EmptyState
         title="Your watchlist is empty"
@@ -22,6 +45,7 @@ export default function WatchlistScreen() {
       style={styles.container}
       data={watchlist}
       keyExtractor={(item) => `${item.tmdbId}`}
+      ListHeaderComponent={<ListHeader />}
       renderItem={({ item }) => (
         <MediaCard
           tmdbId={item.tmdbId}
@@ -43,5 +67,15 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingVertical: spacing.sm,
+  },
+  recsSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  recsTitle: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    marginBottom: spacing.md,
   },
 });

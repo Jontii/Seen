@@ -2,7 +2,6 @@ import { MediaItem, MediaDetail, MediaType, CastMember } from './types';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
-const API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY;
 
 class TmdbError extends Error {
   constructor(
@@ -16,12 +15,17 @@ class TmdbError extends Error {
 
 async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${TMDB_BASE_URL}${path}`);
-  url.searchParams.set('api_key', API_KEY ?? '');
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 
-  const response = await fetch(url.toString());
+  const token = process.env.EXPO_PUBLIC_TMDB_BEARER_TOKEN ?? '';
+  const response = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
   if (!response.ok) {
     throw new TmdbError(`TMDB API error: ${response.statusText}`, response.status);
   }
@@ -42,6 +46,7 @@ interface TmdbSearchResult {
   release_date?: string;
   first_air_date?: string;
   overview: string;
+  vote_average: number;
 }
 
 interface TmdbSearchResponse {
@@ -91,6 +96,7 @@ function mapSearchResult(item: TmdbSearchResult): MediaItem | null {
     posterPath: item.poster_path,
     year: extractYear(item.release_date ?? item.first_air_date),
     overview: item.overview,
+    voteAverage: item.vote_average ?? 0,
   };
 }
 

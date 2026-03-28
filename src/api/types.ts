@@ -8,6 +8,7 @@ export interface MediaItem {
   posterPath: string | null;
   year: string;
   overview: string;
+  voteAverage: number;
 }
 
 export interface CastMember {
@@ -48,4 +49,35 @@ export interface WatchedItem extends WatchlistItem {
   watchedAt: string;
   myRating: number;
   myNote?: string;
+}
+
+// Social types (Phase 2)
+
+export interface Profile {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  inviteCode: string;
+  createdAt: string;
+}
+
+export interface Recommendation {
+  id: string;
+  fromUser: Profile;
+  tmdbId: number;
+  imdbId: string | null;
+  mediaType: MediaType;
+  title: string;
+  posterPath: string | null;
+  year: string;
+  message: string | null;
+  createdAt: string;
+  seenAt: string | null;
+}
+
+export interface FriendWatched {
+  profile: Profile;
+  rating: number;
+  watchedAt: string;
+  note?: string;
 }

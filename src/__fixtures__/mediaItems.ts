@@ -8,6 +8,7 @@ export const movieItem: MediaItem = {
   posterPath: '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg',
   year: '1999',
   overview: 'A ticking-loss insomnia movie.',
+  voteAverage: 8.433,
 };
 
 export const tvItem: MediaItem = {
@@ -18,6 +19,7 @@ export const tvItem: MediaItem = {
   posterPath: '/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg',
   year: '2011',
   overview: 'Seven noble families fight for control.',
+  voteAverage: 8.438,
 };
 
 export const watchlistItem: WatchlistItem = {

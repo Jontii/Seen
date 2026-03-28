@@ -5,10 +5,14 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { getDetails, getImageUrl } from '@/api/tmdb';
 import { getRatings } from '@/api/omdb';
-import { MediaDetail, MediaType } from '@/api/types';
+import { MediaDetail, MediaType, FriendWatched } from '@/api/types';
 import { useLibrary } from '@/hooks/useLibrary';
+import { useAuth } from '@/hooks/useAuth';
+import { useRecommendations } from '@/hooks/useRecommendations';
 import { RatingBadge } from '@/components/RatingBadge';
 import { CastList } from '@/components/CastList';
+import FriendsWhoWatched from '@/components/FriendsWhoWatched';
+import SendToFriendSheet from '@/components/SendToFriendSheet';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
@@ -16,10 +20,14 @@ export default function DetailScreen() {
   const { id, mediaType } = useLocalSearchParams<{ id: string; mediaType: MediaType }>();
   const router = useRouter();
   const { isInWatchlist, isWatched, addToWatchlist, removeFromWatchlist, watched } = useLibrary();
+  const { user } = useAuth();
+  const { getFriendsWhoWatched } = useRecommendations();
 
   const [detail, setDetail] = useState<MediaDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  const [friendsWatched, setFriendsWatched] = useState<FriendWatched[]>([]);
+  const [showSendSheet, setShowSendSheet] = useState(false);
 
   const tmdbId = Number(id);
   const inWatchlist = isInWatchlist(tmdbId);
@@ -32,15 +40,29 @@ export default function DetailScreen() {
     setLoading(true);
     getDetails(tmdbId, mediaType)
       .then(async (data) => {
-        if (data.imdbId) {
-          const ratings = await getRatings(data.imdbId).catch(() => null);
-          data.externalRatings = ratings;
-        }
         setDetail(data);
+        setLoading(false);
+
+        if (data.imdbId) {
+          const ratings = await getRatings(data.imdbId).catch((err) => {
+            console.warn('OMDB fetch failed:', err);
+            return null;
+          });
+          if (ratings) {
+            setDetail((prev) => (prev ? { ...prev, externalRatings: ratings } : prev));
+          }
+        } else {
+          console.warn('No IMDB ID available for OMDB lookup');
+        }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setLoading(false));
   }, [id, mediaType]);
+
+  // Fetch friends who watched
+  useEffect(() => {
+    if (!user || !id) return;
+    getFriendsWhoWatched(tmdbId).then(setFriendsWatched);
+  }, [user, id]);
 
   if (loading || !detail) {
     return (
@@ -73,110 +95,140 @@ export default function DetailScreen() {
   const isLongSynopsis = synopsisText.length > 200;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Image
-          source={getImageUrl(detail.backdropPath, 'w780')}
-          style={styles.backdrop}
-          contentFit="cover"
-        />
-        <View style={styles.heroOverlay} />
-        <View style={styles.heroContent}>
+    <>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Hero */}
+        <View style={styles.hero}>
           <Image
-            source={getImageUrl(detail.posterPath, 'w342')}
-            style={styles.poster}
+            source={getImageUrl(detail.backdropPath, 'w780')}
+            style={styles.backdrop}
             contentFit="cover"
-            transition={200}
           />
-          <View style={styles.heroInfo}>
-            <Text style={styles.title}>{detail.title}</Text>
-            <Text style={styles.meta}>
-              {detail.year}
-              {detail.genres.length > 0 && ` \u2022 ${detail.genres.slice(0, 3).join(', ')}`}
-            </Text>
-            <Text style={styles.meta}>
-              {detail.runtime ? `${detail.runtime} min` : ''}
-              {detail.seasons ? `${detail.seasons} season${detail.seasons > 1 ? 's' : ''}` : ''}
-            </Text>
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroContent}>
+            <Image
+              source={getImageUrl(detail.posterPath, 'w342')}
+              style={styles.poster}
+              contentFit="cover"
+              transition={200}
+            />
+            <View style={styles.heroInfo}>
+              <Text style={styles.title}>{detail.title}</Text>
+              <Text style={styles.meta}>
+                {detail.year}
+                {detail.genres.length > 0 && ` \u2022 ${detail.genres.slice(0, 3).join(', ')}`}
+              </Text>
+              <Text style={styles.meta}>
+                {detail.runtime ? `${detail.runtime} min` : ''}
+                {detail.seasons ? `${detail.seasons} season${detail.seasons > 1 ? 's' : ''}` : ''}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Ratings */}
-      <View style={styles.ratingsRow}>
-        <RatingBadge source="imdb" value={detail.externalRatings?.imdbScore ?? null} />
-        <RatingBadge
-          source="rt"
-          value={detail.externalRatings?.rottenTomatoesScore ?? null}
-          fresh={detail.externalRatings?.rottenTomatoesFresh}
-        />
-        {watchedItem && (
-          <RatingBadge source="personal" value={String(watchedItem.myRating)} />
-        )}
-      </View>
-
-      {/* Synopsis */}
-      {synopsisText ? (
-        <Pressable
-          style={styles.section}
-          onPress={() => isLongSynopsis && setSynopsisExpanded(!synopsisExpanded)}
-        >
-          <Text style={styles.sectionTitle}>Synopsis</Text>
-          <Text
-            style={styles.synopsis}
-            numberOfLines={synopsisExpanded || !isLongSynopsis ? undefined : 4}
-          >
-            {synopsisText}
-          </Text>
-          {isLongSynopsis && (
-            <Text style={styles.expandText}>
-              {synopsisExpanded ? 'Show less' : 'Read more'}
-            </Text>
+        {/* Ratings */}
+        <View style={styles.ratingsRow}>
+          <RatingBadge source="imdb" value={detail.externalRatings?.imdbScore ?? null} />
+          <RatingBadge
+            source="rt"
+            value={detail.externalRatings?.rottenTomatoesScore ?? null}
+            fresh={detail.externalRatings?.rottenTomatoesFresh}
+          />
+          <RatingBadge
+            source="tmdb"
+            value={detail.voteAverage ? detail.voteAverage.toFixed(1) : null}
+          />
+          {watchedItem && (
+            <RatingBadge source="personal" value={String(watchedItem.myRating)} />
           )}
-        </Pressable>
-      ) : null}
-
-      {/* Cast */}
-      <View style={styles.castSection}>
-        <CastList cast={detail.cast} />
-      </View>
-
-      {/* Watched note */}
-      {watchedItem?.myNote ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Note</Text>
-          <Text style={styles.note}>{watchedItem.myNote}</Text>
         </View>
-      ) : null}
 
-      {/* Action Buttons */}
-      <View style={styles.actions}>
-        {!inWatchlist && !alreadyWatched && (
-          <Pressable style={styles.primaryButton} onPress={handleAddToWatchlist}>
-            <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
+        {/* Friends who watched */}
+        <FriendsWhoWatched friendsWatched={friendsWatched} />
+
+        {/* Synopsis */}
+        {synopsisText ? (
+          <Pressable
+            style={styles.section}
+            onPress={() => isLongSynopsis && setSynopsisExpanded(!synopsisExpanded)}
+          >
+            <Text style={styles.sectionTitle}>Synopsis</Text>
+            <Text
+              style={styles.synopsis}
+              numberOfLines={synopsisExpanded || !isLongSynopsis ? undefined : 4}
+            >
+              {synopsisText}
+            </Text>
+            {isLongSynopsis && (
+              <Text style={styles.expandText}>
+                {synopsisExpanded ? 'Show less' : 'Read more'}
+              </Text>
+            )}
           </Pressable>
-        )}
-        {inWatchlist && (
-          <>
-            <Pressable style={styles.primaryButton} onPress={handleMarkAsWatched}>
-              <Text style={styles.primaryButtonText}>Mark as Watched</Text>
+        ) : null}
+
+        {/* Cast */}
+        <View style={styles.castSection}>
+          <CastList cast={detail.cast} />
+        </View>
+
+        {/* Watched note */}
+        {watchedItem?.myNote ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Your Note</Text>
+            <Text style={styles.note}>{watchedItem.myNote}</Text>
+          </View>
+        ) : null}
+
+        {/* Action Buttons */}
+        <View style={styles.actions}>
+          {!inWatchlist && !alreadyWatched && (
+            <Pressable style={styles.primaryButton} onPress={handleAddToWatchlist}>
+              <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
             </Pressable>
+          )}
+          {inWatchlist && (
+            <>
+              <Pressable style={styles.primaryButton} onPress={handleMarkAsWatched}>
+                <Text style={styles.primaryButtonText}>Mark as Watched</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => removeFromWatchlist(tmdbId)}
+              >
+                <Text style={styles.secondaryButtonText}>Remove from Watchlist</Text>
+              </Pressable>
+            </>
+          )}
+          {alreadyWatched && (
+            <Pressable style={styles.secondaryButton} onPress={handleMarkAsWatched}>
+              <Text style={styles.secondaryButtonText}>Update Rating</Text>
+            </Pressable>
+          )}
+          {user && (
             <Pressable
               style={styles.secondaryButton}
-              onPress={() => removeFromWatchlist(tmdbId)}
+              onPress={() => setShowSendSheet(true)}
             >
-              <Text style={styles.secondaryButtonText}>Remove from Watchlist</Text>
+              <Text style={styles.secondaryButtonText}>Send to Friend</Text>
             </Pressable>
-          </>
-        )}
-        {alreadyWatched && (
-          <Pressable style={styles.secondaryButton} onPress={handleMarkAsWatched}>
-            <Text style={styles.secondaryButtonText}>Update Rating</Text>
-          </Pressable>
-        )}
-      </View>
-    </ScrollView>
+          )}
+        </View>
+      </ScrollView>
+
+      {user && (
+        <SendToFriendSheet
+          visible={showSendSheet}
+          onClose={() => setShowSendSheet(false)}
+          tmdbId={detail.tmdbId}
+          imdbId={detail.imdbId}
+          mediaType={detail.mediaType}
+          title={detail.title}
+          posterPath={detail.posterPath}
+          year={detail.year}
+        />
+      )}
+    </>
   );
 }
 
@@ -236,6 +288,7 @@ const styles = StyleSheet.create({
   },
   ratingsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     gap: spacing.sm,
