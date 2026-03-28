@@ -1,4 +1,26 @@
 {
-  "name": "have-you-seen",
-  "slug": "have-you-seen"
+  "expo": {
+    "name": "Have You Seen",
+    "slug": "have-you-seen",
+    "version": "1.0.0",
+    "scheme": "have-you-seen",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.haveyouseen.app",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.haveyouseen.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": ["expo-router"],
+    "extra": {
+      "eas": {
+        "projectId": "5e00c4e8-35bd-4f33-a23f-57e2d75841e8"
+      }
+    }
+  }
 }
