@@ -1,4 +1,4 @@
-import { MediaItem, MediaDetail, MediaType, CastMember } from './types';
+import { MediaItem, MediaDetail, MediaType, CastMember, WatchProviders, WatchProviderInfo } from './types';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
@@ -82,6 +82,14 @@ interface TmdbDetailResponse {
       profile_path: string | null;
     }>;
   };
+  'watch/providers'?: {
+    results: Record<string, {
+      link?: string;
+      flatrate?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+      rent?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+      buy?: Array<{ provider_id: number; provider_name: string; logo_path: string }>;
+    }>;
+  };
 }
 
 function mapSearchResult(item: TmdbSearchResult): MediaItem | null {
@@ -119,9 +127,27 @@ export async function getTrending(): Promise<MediaItem[]> {
     .filter((item): item is MediaItem => item !== null);
 }
 
+function mapWatchProviders(data: TmdbDetailResponse, region = 'US'): WatchProviders | null {
+  const regionData = data['watch/providers']?.results?.[region];
+  if (!regionData) return null;
+
+  const mapProvider = (p: { provider_id: number; provider_name: string; logo_path: string }): WatchProviderInfo => ({
+    providerId: p.provider_id,
+    providerName: p.provider_name,
+    logoPath: p.logo_path,
+  });
+
+  return {
+    link: regionData.link ?? null,
+    flatrate: (regionData.flatrate ?? []).map(mapProvider),
+    rent: (regionData.rent ?? []).map(mapProvider),
+    buy: (regionData.buy ?? []).map(mapProvider),
+  };
+}
+
 export async function getDetails(tmdbId: number, mediaType: MediaType): Promise<MediaDetail> {
   const data = await tmdbFetch<TmdbDetailResponse>(`/${mediaType}/${tmdbId}`, {
-    append_to_response: 'credits,external_ids',
+    append_to_response: 'credits,external_ids,watch/providers',
   });
 
   const cast: CastMember[] = (data.credits?.cast ?? []).slice(0, 20).map((member) => ({
@@ -146,6 +172,7 @@ export async function getDetails(tmdbId: number, mediaType: MediaType): Promise<
     voteAverage: data.vote_average,
     cast,
     externalRatings: null,
+    watchProviders: mapWatchProviders(data),
   };
 }
 

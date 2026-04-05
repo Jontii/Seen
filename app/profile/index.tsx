@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Alert, Share, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert, Share, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Avatar from '@/components/Avatar';
+import InviteQRCode from '@/components/InviteQRCode';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 
 export default function ProfileScreen() {
@@ -115,7 +116,7 @@ export default function ProfileScreen() {
   if (!profile) return null;
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Pressable onPress={handlePickAvatar} style={styles.avatarWrapper}>
           <Avatar name={profile.displayName} imageUrl={profile.avatarUrl} size="xl" />
@@ -135,6 +136,7 @@ export default function ProfileScreen() {
 
       <View style={styles.inviteSection}>
         <Text style={styles.sectionLabel}>Your Invite Code</Text>
+        <InviteQRCode inviteCode={profile.inviteCode} />
         <View style={styles.codeRow}>
           <Text style={styles.code}>{profile.inviteCode}</Text>
           <Pressable onPress={handleCopyCode} style={styles.iconButton}>
@@ -161,14 +163,17 @@ export default function ProfileScreen() {
         <Ionicons name="trash-outline" size={22} color={colors.destructive} />
         <Text style={[styles.rowText, { color: colors.destructive }]}>Delete Account</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   header: {
     alignItems: 'center',

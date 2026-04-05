@@ -12,6 +12,7 @@ import { useRecommendations } from '@/hooks/useRecommendations';
 import { RatingBadge } from '@/components/RatingBadge';
 import { CastList } from '@/components/CastList';
 import FriendsWhoWatched from '@/components/FriendsWhoWatched';
+import WatchProviders from '@/components/WatchProviders';
 import SendToFriendSheet from '@/components/SendToFriendSheet';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
@@ -92,8 +93,9 @@ export default function DetailScreen() {
   }
 
   function handleMarkAsWatched() {
+    const recParam = recId ? `&recId=${recId}` : '';
     router.push(
-      `/rate/${tmdbId}?mediaType=${mediaType}&title=${encodeURIComponent(detail?.title ?? '')}`,
+      `/rate/${tmdbId}?mediaType=${mediaType}&title=${encodeURIComponent(detail?.title ?? '')}${recParam}`,
     );
   }
 
@@ -148,6 +150,9 @@ export default function DetailScreen() {
             <RatingBadge source="personal" value={String(watchedItem.myRating)} />
           )}
         </View>
+
+        {/* Streaming availability */}
+        <WatchProviders providers={detail.watchProviders} />
 
         {/* Friends who watched */}
         <FriendsWhoWatched

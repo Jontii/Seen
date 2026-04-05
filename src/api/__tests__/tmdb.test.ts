@@ -113,7 +113,7 @@ describe('tmdb', () => {
 
       const calledUrl = mockFetch.mock.calls[0][0];
       expect(calledUrl).toContain('/movie/550');
-      expect(calledUrl).toContain('append_to_response=credits%2Cexternal_ids');
+      expect(calledUrl).toContain('append_to_response=credits%2Cexternal_ids%2Cwatch%2Fproviders');
     });
 
     it('includes mediaType in URL path for TV', async () => {
@@ -139,6 +139,40 @@ describe('tmdb', () => {
       expect(detail.cast).toHaveLength(2);
       expect(detail.cast[0].name).toBe('Edward Norton');
       expect(detail.cast[0].character).toBe('The Narrator');
+    });
+
+    it('maps watch providers from response', async () => {
+      const responseWithProviders = {
+        ...detailMovieResponse,
+        'watch/providers': {
+          results: {
+            US: {
+              link: 'https://www.themoviedb.org/movie/550/watch',
+              flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/netflix.jpg' }],
+              rent: [{ provider_id: 2, provider_name: 'Apple TV', logo_path: '/apple.jpg' }],
+              buy: [],
+            },
+          },
+        },
+      };
+      mockFetchResponse(responseWithProviders);
+
+      const detail = await getDetails(550, 'movie');
+
+      expect(detail.watchProviders).toEqual({
+        link: 'https://www.themoviedb.org/movie/550/watch',
+        flatrate: [{ providerId: 8, providerName: 'Netflix', logoPath: '/netflix.jpg' }],
+        rent: [{ providerId: 2, providerName: 'Apple TV', logoPath: '/apple.jpg' }],
+        buy: [],
+      });
+    });
+
+    it('returns null watchProviders when no region data', async () => {
+      mockFetchResponse(detailMovieResponse);
+
+      const detail = await getDetails(550, 'movie');
+
+      expect(detail.watchProviders).toBeNull();
     });
 
     it('maps full TV detail response', async () => {

@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { getImageUrl } from '@/api/tmdb';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
@@ -15,16 +16,25 @@ interface MediaCardProps {
   rating?: number;
   from?: string;
   inWatchlist?: boolean;
+  onLongPress?: () => void;
 }
 
-export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAverage, rating, from, inWatchlist }: MediaCardProps) {
+export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAverage, rating, from, inWatchlist, onLongPress }: MediaCardProps) {
   const router = useRouter();
   const fromParam = from ? `&from=${from}` : '';
+
+  const handleLongPress = onLongPress
+    ? () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onLongPress();
+      }
+    : undefined;
 
   return (
     <Pressable
       style={styles.container}
       onPress={() => router.push(`/details/${tmdbId}?mediaType=${mediaType}${fromParam}`)}
+      onLongPress={handleLongPress}
       testID="media-card"
     >
       <Image

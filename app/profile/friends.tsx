@@ -42,10 +42,16 @@ export default function FriendsScreen() {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.addButton} onPress={() => router.push('/profile/add-friend')}>
-        <Ionicons name="person-add" size={20} color="#fff" />
-        <Text style={styles.addButtonText}>Add Friend</Text>
-      </Pressable>
+      <View style={styles.buttonRow}>
+        <Pressable style={[styles.addButton, styles.buttonFlex]} onPress={() => router.push('/profile/add-friend')}>
+          <Ionicons name="person-add" size={20} color="#fff" />
+          <Text style={styles.addButtonText}>Add Friend</Text>
+        </Pressable>
+        <Pressable style={[styles.scanButton, styles.buttonFlex]} onPress={() => router.push('/profile/scan-qr')}>
+          <Ionicons name="qr-code" size={20} color={colors.text} />
+          <Text style={styles.scanButtonText}>Scan QR</Text>
+        </Pressable>
+      </View>
 
       <FlatList
         data={friends}
@@ -70,6 +76,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  buttonFlex: {
+    flex: 1,
+  },
   addButton: {
     flexDirection: 'row',
     backgroundColor: colors.primary,
@@ -78,10 +92,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
   },
   addButtonText: {
     color: '#fff',
+    fontSize: fontSize.md,
+    fontWeight: '600',
+  },
+  scanButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceLight,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  scanButtonText: {
+    color: colors.text,
     fontSize: fontSize.md,
     fontWeight: '600',
   },

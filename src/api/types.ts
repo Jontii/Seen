@@ -33,6 +33,7 @@ export interface MediaDetail extends MediaItem {
   voteAverage: number;
   cast: CastMember[];
   externalRatings: ExternalRatings | null;
+  watchProviders: WatchProviders | null;
 }
 
 export interface WatchlistItem {
@@ -73,6 +74,19 @@ export interface Recommendation {
   message: string | null;
   createdAt: string;
   seenAt: string | null;
+}
+
+export interface WatchProviderInfo {
+  providerId: number;
+  providerName: string;
+  logoPath: string;
+}
+
+export interface WatchProviders {
+  link: string | null;
+  flatrate: WatchProviderInfo[];
+  rent: WatchProviderInfo[];
+  buy: WatchProviderInfo[];
 }
 
 export interface FriendWatched {

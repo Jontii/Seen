@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
 import { useDebounce } from '@/hooks/useDebounce';
 import { searchMulti, getTrending } from '@/api/tmdb';
 import { MediaItem } from '@/api/types';
 import { MediaCard } from '@/components/MediaCard';
 import { EmptyState } from '@/components/EmptyState';
+import SendToFriendSheet from '@/components/SendToFriendSheet';
 import { useLibrary } from '@/hooks/useLibrary';
+import { useAuth } from '@/hooks/useAuth';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
@@ -15,7 +17,9 @@ export default function SearchScreen() {
   const [trending, setTrending] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendTarget, setSendTarget] = useState<MediaItem | null>(null);
   const { isInWatchlist } = useLibrary();
+  const { user } = useAuth();
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -64,6 +68,9 @@ export default function SearchScreen() {
         <FlatList
           data={displayData}
           keyExtractor={(item) => `${item.tmdbId}-${item.mediaType}`}
+          ListHeaderComponent={user ? (
+            <Text style={styles.tip}>Hold down to send to a friend</Text>
+          ) : null}
           renderItem={({ item }) => (
             <MediaCard
               tmdbId={item.tmdbId}
@@ -73,10 +80,23 @@ export default function SearchScreen() {
               year={item.year}
               voteAverage={item.voteAverage}
               inWatchlist={isInWatchlist(item.tmdbId)}
+              onLongPress={user ? () => setSendTarget(item) : undefined}
             />
           )}
           contentContainerStyle={styles.list}
           keyboardDismissMode="on-drag"
+        />
+      )}
+      {sendTarget && (
+        <SendToFriendSheet
+          visible={!!sendTarget}
+          onClose={() => setSendTarget(null)}
+          tmdbId={sendTarget.tmdbId}
+          imdbId={sendTarget.imdbId}
+          mediaType={sendTarget.mediaType}
+          title={sendTarget.title}
+          posterPath={sendTarget.posterPath}
+          year={sendTarget.year}
         />
       )}
     </View>
@@ -97,6 +117,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
     borderRadius: borderRadius.lg,
+  },
+  tip: {
+    color: colors.textTertiary,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    paddingVertical: spacing.sm,
   },
   list: {
     paddingVertical: spacing.sm,

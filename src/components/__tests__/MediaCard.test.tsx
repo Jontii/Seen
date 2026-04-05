@@ -14,9 +14,16 @@ jest.mock('expo-image', () => {
   };
 });
 
+const mockHaptics = jest.fn();
+jest.mock('expo-haptics', () => ({
+  impactAsync: (...args: any[]) => mockHaptics(...args),
+  ImpactFeedbackStyle: { Light: 'Light', Medium: 'Medium', Heavy: 'Heavy' },
+}));
+
 describe('MediaCard', () => {
   beforeEach(() => {
     mockPush.mockClear();
+    mockHaptics.mockClear();
   });
 
   const defaultProps = {
@@ -68,5 +75,25 @@ describe('MediaCard', () => {
     const { getByTestId } = render(<MediaCard {...defaultProps} from="watchlist" />);
     fireEvent.press(getByTestId('media-card'));
     expect(mockPush).toHaveBeenCalledWith('/details/550?mediaType=movie&from=watchlist');
+  });
+
+  it('calls onLongPress callback when long-pressed', () => {
+    const onLongPress = jest.fn();
+    const { getByTestId } = render(<MediaCard {...defaultProps} onLongPress={onLongPress} />);
+    fireEvent(getByTestId('media-card'), 'longPress');
+    expect(onLongPress).toHaveBeenCalled();
+  });
+
+  it('triggers haptic feedback on long press', () => {
+    const onLongPress = jest.fn();
+    const { getByTestId } = render(<MediaCard {...defaultProps} onLongPress={onLongPress} />);
+    fireEvent(getByTestId('media-card'), 'longPress');
+    expect(mockHaptics).toHaveBeenCalledWith('Medium');
+  });
+
+  it('does not crash when onLongPress is not provided', () => {
+    const { getByTestId } = render(<MediaCard {...defaultProps} />);
+    fireEvent(getByTestId('media-card'), 'longPress');
+    expect(mockHaptics).not.toHaveBeenCalled();
   });
 });

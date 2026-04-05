@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useFriends } from '@/hooks/useFriends';
 import { useRecommendations } from '@/hooks/useRecommendations';
+import { useSendFrequency } from '@/hooks/useSendFrequency';
 import { MediaType, Profile } from '@/api/types';
 import Avatar from './Avatar';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +41,17 @@ export default function SendToFriendSheet({
 }: Props) {
   const { friends } = useFriends();
   const { sendRecommendation } = useRecommendations();
+  const { frequentFriendIds } = useSendFrequency();
+
+  const sortedFriends = useMemo(() => {
+    if (frequentFriendIds.length === 0) return friends;
+    const frequentSet = new Set(frequentFriendIds);
+    return [...friends].sort((a, b) => {
+      const aFreq = frequentSet.has(a.id) ? 0 : 1;
+      const bFreq = frequentSet.has(b.id) ? 0 : 1;
+      return aFreq - bFreq;
+    });
+  }, [friends, frequentFriendIds]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -78,12 +90,16 @@ export default function SendToFriendSheet({
     }
   };
 
+  const frequentSet = useMemo(() => new Set(frequentFriendIds), [frequentFriendIds]);
+
   const renderFriend = ({ item }: { item: Profile }) => {
     const isSelected = selected.has(item.id);
+    const isFrequent = frequentSet.has(item.id);
     return (
       <Pressable style={[styles.friendRow, isSelected && styles.friendRowSelected]} onPress={() => toggle(item.id)}>
         <Avatar name={item.displayName} imageUrl={item.avatarUrl} size="md" />
         <Text style={styles.friendName}>{item.displayName}</Text>
+        {isFrequent && <Text style={styles.recentLabel}>Recent</Text>}
         <Ionicons
           name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
           size={24}
@@ -123,7 +139,7 @@ export default function SendToFriendSheet({
         />
 
         <FlatList
-          data={friends}
+          data={sortedFriends}
           keyExtractor={(item) => item.id}
           renderItem={renderFriend}
           contentContainerStyle={styles.list}
@@ -194,6 +210,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     flex: 1,
+  },
+  recentLabel: {
+    color: colors.textTertiary,
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+    marginRight: spacing.sm,
   },
   empty: {
     color: colors.textSecondary,

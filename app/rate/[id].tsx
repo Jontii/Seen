@@ -3,18 +3,21 @@ import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useLibrary } from '@/hooks/useLibrary';
+import { useRecommendations } from '@/hooks/useRecommendations';
 import { MediaType } from '@/api/types';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
 export default function RateScreen() {
-  const { id, title } = useLocalSearchParams<{
+  const { id, title, recId } = useLocalSearchParams<{
     id: string;
     mediaType: MediaType;
     title: string;
+    recId?: string;
   }>();
   const router = useRouter();
   const { isWatched, markAsWatched, updateRating, watched } = useLibrary();
+  const { markAsSeen } = useRecommendations();
 
   const tmdbId = Number(id);
   const alreadyWatched = isWatched(tmdbId);
@@ -36,6 +39,11 @@ export default function RateScreen() {
     } else {
       markAsWatched(tmdbId, rating, note || undefined);
     }
+
+    if (recId) {
+      markAsSeen(recId);
+    }
+
     router.back();
   }
 
