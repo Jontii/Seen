@@ -137,12 +137,24 @@ export function useRecommendations() {
     [user],
   );
 
+  const dismissRecommendation = useCallback(
+    async (recommendationId: string) => {
+      if (!user) return;
+
+      setRecommendations((prev) => prev.filter((r) => r.id !== recommendationId));
+
+      await supabase.from('recommendations').delete().eq('id', recommendationId).eq('to_user', user.id);
+    },
+    [user],
+  );
+
   return {
     recommendations,
     unseenCount,
     isLoading,
     sendRecommendation,
     markAsSeen,
+    dismissRecommendation,
     getFriendsWhoWatched,
     refreshRecommendations: fetchRecommendations,
   };

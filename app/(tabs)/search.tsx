@@ -5,6 +5,7 @@ import { searchMulti, getTrending } from '@/api/tmdb';
 import { MediaItem } from '@/api/types';
 import { MediaCard } from '@/components/MediaCard';
 import { EmptyState } from '@/components/EmptyState';
+import { useLibrary } from '@/hooks/useLibrary';
 import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
@@ -14,6 +15,7 @@ export default function SearchScreen() {
   const [trending, setTrending] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isInWatchlist } = useLibrary();
 
   const debouncedQuery = useDebounce(query, 300);
 
@@ -70,6 +72,7 @@ export default function SearchScreen() {
               posterPath={item.posterPath}
               year={item.year}
               voteAverage={item.voteAverage}
+              inWatchlist={isInWatchlist(item.tmdbId)}
             />
           )}
           contentContainerStyle={styles.list}

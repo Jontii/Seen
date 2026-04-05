@@ -18,7 +18,7 @@ export default function RecommendationCard({ recommendation, onSeen }: Props) {
 
   const handlePress = () => {
     if (onSeen && isNew) onSeen();
-    router.push(`/details/${recommendation.tmdbId}?mediaType=${recommendation.mediaType}`);
+    router.push(`/details/${recommendation.tmdbId}?mediaType=${recommendation.mediaType}&from=recommendation&recId=${recommendation.id}`);
   };
 
   return (

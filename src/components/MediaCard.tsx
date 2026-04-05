@@ -13,15 +13,18 @@ interface MediaCardProps {
   year: string;
   voteAverage?: number;
   rating?: number;
+  from?: string;
+  inWatchlist?: boolean;
 }
 
-export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAverage, rating }: MediaCardProps) {
+export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAverage, rating, from, inWatchlist }: MediaCardProps) {
   const router = useRouter();
+  const fromParam = from ? `&from=${from}` : '';
 
   return (
     <Pressable
       style={styles.container}
-      onPress={() => router.push(`/details/${tmdbId}?mediaType=${mediaType}`)}
+      onPress={() => router.push(`/details/${tmdbId}?mediaType=${mediaType}${fromParam}`)}
       testID="media-card"
     >
       <Image
@@ -42,6 +45,12 @@ export function MediaCard({ tmdbId, mediaType, title, posterPath, year, voteAver
         </View>
       </View>
       <View style={styles.ratingsColumn}>
+        {inWatchlist && (
+          <View style={styles.ratingContainer}>
+            <Text style={styles.checkIcon}>✓</Text>
+            <Text style={styles.checkText}>Listed</Text>
+          </View>
+        )}
         {voteAverage != null && voteAverage > 0 && (
           <View style={styles.ratingContainer}>
             <Text style={styles.tmdbIcon}>★</Text>
@@ -117,6 +126,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+  },
+  checkIcon: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+  },
+  checkText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: '600',
   },
   tmdbIcon: {
     color: '#01D277',

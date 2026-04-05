@@ -52,4 +52,21 @@ describe('MediaCard', () => {
     fireEvent.press(getByTestId('media-card'));
     expect(mockPush).toHaveBeenCalledWith('/details/550?mediaType=movie');
   });
+
+  it('shows Listed indicator when inWatchlist is true', () => {
+    const { getByText } = render(<MediaCard {...defaultProps} inWatchlist />);
+    expect(getByText('✓')).toBeTruthy();
+    expect(getByText('Listed')).toBeTruthy();
+  });
+
+  it('does not show Listed indicator when inWatchlist is false', () => {
+    const { queryByText } = render(<MediaCard {...defaultProps} inWatchlist={false} />);
+    expect(queryByText('Listed')).toBeNull();
+  });
+
+  it('passes from param in navigation URL', () => {
+    const { getByTestId } = render(<MediaCard {...defaultProps} from="watchlist" />);
+    fireEvent.press(getByTestId('media-card'));
+    expect(mockPush).toHaveBeenCalledWith('/details/550?mediaType=movie&from=watchlist');
+  });
 });

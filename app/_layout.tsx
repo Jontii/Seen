@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { LibraryProvider } from '@/hooks/useLibrary';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import DemoModeSwitcher from '@/components/DemoModeSwitcher';
 import React from 'react';
 
 function RootNavigator() {
@@ -69,6 +70,7 @@ export default function RootLayout() {
     <AuthProvider>
       <LibraryProvider>
         <RootNavigator />
+        <DemoModeSwitcher />
       </LibraryProvider>
     </AuthProvider>
   );

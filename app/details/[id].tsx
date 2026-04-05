@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { getDetails, getImageUrl } from '@/api/tmdb';
 import { getRatings } from '@/api/omdb';
-import { MediaDetail, MediaType, FriendWatched } from '@/api/types';
+import { MediaDetail, MediaType, FriendWatched, Recommendation } from '@/api/types';
 import { useLibrary } from '@/hooks/useLibrary';
 import { useAuth } from '@/hooks/useAuth';
 import { useRecommendations } from '@/hooks/useRecommendations';
@@ -17,11 +17,11 @@ import { colors, spacing, fontSize, borderRadius } from '@/constants/theme';
 import React from 'react';
 
 export default function DetailScreen() {
-  const { id, mediaType } = useLocalSearchParams<{ id: string; mediaType: MediaType }>();
+  const { id, mediaType, from, recId } = useLocalSearchParams<{ id: string; mediaType: MediaType; from?: string; recId?: string }>();
   const router = useRouter();
   const { isInWatchlist, isWatched, addToWatchlist, removeFromWatchlist, watched } = useLibrary();
   const { user } = useAuth();
-  const { getFriendsWhoWatched } = useRecommendations();
+  const { getFriendsWhoWatched, recommendations, dismissRecommendation } = useRecommendations();
 
   const [detail, setDetail] = useState<MediaDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +33,8 @@ export default function DetailScreen() {
   const inWatchlist = isInWatchlist(tmdbId);
   const alreadyWatched = isWatched(tmdbId);
   const watchedItem = watched.find((i) => i.tmdbId === tmdbId);
+  const cameFromWatchlist = from === 'watchlist';
+  const cameFromRecommendation = from === 'recommendation';
 
   useEffect(() => {
     if (!id || !mediaType) return;
@@ -83,6 +85,10 @@ export default function DetailScreen() {
       posterPath: detail.posterPath,
       year: detail.year,
     });
+  }
+
+  function handleGoToWatchlist() {
+    router.push('/(tabs)/watchlist');
   }
 
   function handleMarkAsWatched() {
@@ -144,7 +150,10 @@ export default function DetailScreen() {
         </View>
 
         {/* Friends who watched */}
-        <FriendsWhoWatched friendsWatched={friendsWatched} />
+        <FriendsWhoWatched
+          friendsWatched={friendsWatched}
+          recommendations={recommendations.filter((r) => r.tmdbId === tmdbId)}
+        />
 
         {/* Synopsis */}
         {synopsisText ? (
@@ -182,36 +191,78 @@ export default function DetailScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          {!inWatchlist && !alreadyWatched && (
-            <Pressable style={styles.primaryButton} onPress={handleAddToWatchlist}>
-              <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
-            </Pressable>
-          )}
-          {inWatchlist && (
+          {cameFromRecommendation ? (
             <>
-              <Pressable style={styles.primaryButton} onPress={handleMarkAsWatched}>
-                <Text style={styles.primaryButtonText}>Mark as Watched</Text>
+              {!inWatchlist && !alreadyWatched && (
+                <Pressable style={styles.primaryButton} onPress={() => { handleAddToWatchlist(); router.back(); }}>
+                  <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
+                </Pressable>
+              )}
+              {inWatchlist && !alreadyWatched && (
+                <Pressable style={styles.primaryButton} onPress={handleGoToWatchlist}>
+                  <Text style={styles.primaryButtonText}>Already on Watchlist</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.secondaryButton} onPress={handleMarkAsWatched}>
+                <Text style={styles.secondaryButtonText}>Already Seen</Text>
               </Pressable>
               <Pressable
-                style={styles.secondaryButton}
-                onPress={() => removeFromWatchlist(tmdbId)}
+                style={styles.destructiveButton}
+                onPress={() => {
+                  if (recId) dismissRecommendation(recId);
+                  router.back();
+                }}
               >
-                <Text style={styles.secondaryButtonText}>Remove from Watchlist</Text>
+                <Text style={styles.destructiveButtonText}>Not for Me</Text>
               </Pressable>
             </>
-          )}
-          {alreadyWatched && (
-            <Pressable style={styles.secondaryButton} onPress={handleMarkAsWatched}>
-              <Text style={styles.secondaryButtonText}>Update Rating</Text>
-            </Pressable>
-          )}
-          {user && (
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => setShowSendSheet(true)}
-            >
-              <Text style={styles.secondaryButtonText}>Send to Friend</Text>
-            </Pressable>
+          ) : (
+            <>
+              {!inWatchlist && !alreadyWatched && (
+                <Pressable style={styles.primaryButton} onPress={handleAddToWatchlist}>
+                  <Text style={styles.primaryButtonText}>Add to Watchlist</Text>
+                </Pressable>
+              )}
+              {inWatchlist && cameFromWatchlist && (
+                <>
+                  <Pressable style={styles.primaryButton} onPress={handleMarkAsWatched}>
+                    <Text style={styles.primaryButtonText}>Mark as Watched</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.secondaryButton}
+                    onPress={() => removeFromWatchlist(tmdbId)}
+                  >
+                    <Text style={styles.secondaryButtonText}>Remove from Watchlist</Text>
+                  </Pressable>
+                </>
+              )}
+              {inWatchlist && !cameFromWatchlist && (
+                <>
+                  <Pressable style={styles.primaryButton} onPress={handleGoToWatchlist}>
+                    <Text style={styles.primaryButtonText}>Go to Watchlist</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.secondaryButton}
+                    onPress={() => removeFromWatchlist(tmdbId)}
+                  >
+                    <Text style={styles.secondaryButtonText}>Remove from Watchlist</Text>
+                  </Pressable>
+                </>
+              )}
+              {alreadyWatched && (
+                <Pressable style={styles.secondaryButton} onPress={handleMarkAsWatched}>
+                  <Text style={styles.secondaryButtonText}>Update Rating</Text>
+                </Pressable>
+              )}
+              {user && (
+                <Pressable
+                  style={styles.secondaryButton}
+                  onPress={() => setShowSendSheet(true)}
+                >
+                  <Text style={styles.secondaryButtonText}>Send to Friend</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -346,6 +397,19 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: '500',
+  },
+  destructiveButton: {
+    backgroundColor: 'transparent',
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.destructive,
+  },
+  destructiveButtonText: {
+    color: colors.destructive,
     fontSize: fontSize.md,
     fontWeight: '500',
   },
